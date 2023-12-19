@@ -13,65 +13,67 @@
 namespace fs = boost::filesystem;
 using namespace std;
 
-HRESULT DownloadFile(string line, fs::path full_name, string chat_name, int& k) {
+HRESULT DownloadFile(string line, fs::path full_name, string chat_name, string &photo_full_name, int& k) {
     int start = line.find("https://sun");
-    int end = line.find("=album") + 6; //line.find_last_of("=album")+1
+    int end = line.find("=album") + 6; 
+
+    bool find_standart_dir = false;
 
     string link = line.substr(start, end - start);
-    wstring w_link = wstring(link.begin(), link.end());
-
-    wstring temp = full_name.wstring();
-    string photo_full_name;
-    wstring w_photo_full_name;
-    cout << full_name << endl;
-
-    if (temp.find(L"bookmarks") != std::string::npos)
+    photo_full_name = "";
+ 
+    if (full_name.string().find("bookmarks") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTO_AND_VIDEO\\BOOKMARKS\\"; // СДЕЛАТЬ ПУТИ ОТ ТОТГО ЧТО ВВЁЛ ПОЛЬЗОАВТЕЛЬ. ВЕДЬ они разные
+        //photo_full_name = full_name + 
+        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\BOOKMARKS\\"; // СДЕЛАТЬ ПУТИ ОТ ТОТГО ЧТО ВВЁЛ ПОЛЬЗОАВТЕЛЬ. ВЕДЬ они разные
+        find_standart_dir = true;
     }
-    if (temp.find(L"likes") != std::string::npos)
+    if (full_name.string().find("likes") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTO_AND_VIDEO\\LIKES\\";
+        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\LIKES\\";
+        find_standart_dir = true;
     }
-    if (temp.find(L"messages") != std::string::npos)
+    if (full_name.string().find("messages") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTO_AND_VIDEO\\MESSAGES\\";
+        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\MESSAGES\\";
+        find_standart_dir = true;
     }
-    if (temp.find(L"photos") != std::string::npos)
+    if (full_name.string().find("photos") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTO_AND_VIDEO\\PHOTOS\\";
+        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\PHOTOS\\";
+        find_standart_dir = true;
     }
-    if (temp.find(L"profile") != std::string::npos)
+    if (full_name.string().find("profile") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTO_AND_VIDEO\\PROFILE\\";
+        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\PROFILE\\";
+        find_standart_dir = true;
     }
-    if (temp.find(L"video") != std::string::npos)
+    if (full_name.string().find("video") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTO_AND_VIDEO\\VIDEO\\";
+        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\VIDEO\\";
+        find_standart_dir = true;
     }
-    if (temp.find(L"wall") != std::string::npos)
+    if (full_name.string().find("wall") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTO_AND_VIDEO\\WALL\\";
+        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\WALL\\";
+        find_standart_dir = true;
     }
-
+    if (!find_standart_dir)
+    {
+        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\OTHER\\";
+    }
     photo_full_name = photo_full_name + chat_name + " (" + to_string(k) + ")" + ".jpg";
     HRESULT download_start = URLDownloadToFileA(0, link.c_str(), photo_full_name.c_str(), 0, 0);
-
-
-    //photo_full_name = photo_full_name + "ЫЫЫЫЫЫЫЫ" + '(' + to_string(k) + ')' + ".jpg";
-    //
-    //w_photo_full_name = wstring(photo_full_name.begin(), photo_full_name.end());
-    //cout << w_photo_full_name.c_str() << "<-----";
-    //cout << photo_full_name.c_str();
-
-    //HRESULT download_start = URLDownloadToFile(0, (LPCWSTR)w_link.c_str(), (LPCWSTR)w_photo_full_name.c_str(), 0, 0); //class="ui_crumb" >ИМЯ С КЕМ ПЕРЕПИСКА<
     return download_start;
 }
 
 bool ReadFileHtml(fs::path full_name, int& k)
 {
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+
     string line;
     string chat_name = " "; //default name
+    string photo_full_name = " ";
     ifstream in(full_name.string());
     int s;
 
@@ -85,21 +87,29 @@ bool ReadFileHtml(fs::path full_name, int& k)
                 int start_name = line.rfind("\" >") + 3; // начало имени
                 int end_name = line.find("</div>", start_name - 1); // конец имени. Ищем div начиная с начала имени.
 
-                cout << "START: " << start_name;
-                cout << "END: " << end_name;
-
                 chat_name = line.substr(start_name, end_name - start_name);
-
-                cout << " " << chat_name << endl;
             }
 
             if (line.find("jpg") != std::string::npos)
             {
                 if (line.find("https://sun") != std::string::npos)
                 {
-                    if (DownloadFile(line, full_name, chat_name, k) == S_OK)
+                    if (DownloadFile(line, full_name, chat_name, photo_full_name, k) == S_OK)
                     {
-                        cout << "Photo number " << k++ << " is being downloaded\n";
+                        SetConsoleTextAttribute(hConsole, 10);
+                        cout << "Photo number ";
+                        SetConsoleTextAttribute(hConsole, 12);
+                        cout << k++;
+                        SetConsoleTextAttribute(hConsole, 10);
+                        cout << " is being downloaded from: ";
+                        SetConsoleTextAttribute(hConsole, 11);
+                        cout << chat_name;
+                        SetConsoleTextAttribute(hConsole, 15);
+                        cout << " to: ";
+                        SetConsoleTextAttribute(hConsole, 14);
+                        cout << photo_full_name<<endl;
+                        SetConsoleTextAttribute(hConsole, 15);
+                        k++;
                     }
                 }
             }
@@ -114,10 +124,59 @@ bool ReadFileHtml(fs::path full_name, int& k)
 
 bool CreateDirectories(fs::path folder)
 {
-    folder += "\\ALL_PHOTO_AND_VIDEO";
-    fs::path original_path = folder;
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+    string final_folder[9] = { "\\ALL_PHOTOS",
+                               "\\BOOKMARKS",
+                               "\\LIKES",
+                               "\\MESSAGES",
+                               "\\PHOTOS",
+                               "\\PROFILE",
+                               "\\VIDEO",
+                               "\\WALL",
+                               "\\OTHER"
+                             };
 
-    if (!fs::create_directory(folder)) { return 0; }
+   
+    bool root_folder_exist = false;
+
+    folder += final_folder[0]; 
+    fs::path original_path = folder; // original path with \\ALL_PHOTOS
+
+    for (int i = 0; i < 9; i++)
+    {
+        if (root_folder_exist)
+        { 
+            folder = original_path;
+            folder += final_folder[i]; 
+        }
+        else 
+        { 
+            root_folder_exist = true;
+        }
+
+        if (!fs::is_directory(folder)) // если не существует папки ,то попробуем создать
+        {
+            if (fs::create_directory(folder))
+            {
+                SetConsoleTextAttribute(hConsole, 10);
+                cout << "The " << folder << " folder has been successfully created\n";
+                SetConsoleTextAttribute(hConsole, 15);
+            }
+            else throw folder;
+        }
+        else
+        {
+            SetConsoleTextAttribute(hConsole, 14);
+            cout << "The " << folder << " folder already exists\n";
+            SetConsoleTextAttribute(hConsole, 15); 
+        }
+
+   }
+    
+    Sleep(1000);
+    /*folder += "\\BOOKMARKS";
+    folder += "\\LIKES";
+    
 
     if (!fs::create_directory(folder += "\\BOOKMARKS")) { return 0; }
 
@@ -137,57 +196,53 @@ bool CreateDirectories(fs::path folder)
     if (!fs::create_directory(folder += "\\VIDEO")) { return 0; }
 
     folder = original_path;
-    if (!fs::create_directory(folder += "\\WALL")) { return 0; }
+    if (!fs::create_directory(folder += "\\WALL")) { return 0; }*/
 
     return 1;
 }
 int main()
 {
-    std::locale system("");
-    std::locale::global(system);
-    //system("chcp 1251");
+   
     setlocale(LC_ALL, "RUS");
+
     int k = 0;
-
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE); // получаем хэндл(указатель) на STD вывод (cout)
-
-    fs::path p("C:\\Users\\Alex\\Downloads\\Archive"); // стандартный путь к папке
-
+    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE); // for change console color
+    system("mode con cols=180 lines=50");
+   
+    //fs::path p("C:\\Users\\Alex\\Downloads\\Archive"); // стандартный путь к папке
+    fs::path full_name("C:\\Users\\Alex\\Downloads\\Archive");
     cout << "Enter the full path to the folder. "
         "Example: \"C:\\Users\\Alex\\Downloads\\Archive\" \n";
 
-    //cin >> p; // ввод пути
-    CreateDirectories(p);
+    //cin >> full_name; // ввод пути
+    try
+    {
+        CreateDirectories(full_name); //p
+    }
+    catch (const fs::path& problematic_folder) // to save memory, we send it by link
+    {
+        SetConsoleTextAttribute(hConsole, 12);
+        cout << "Failed to create folder: " << problematic_folder << endl;
+        cout << "Try to run the program with administrator rights";
+        SetConsoleTextAttribute(hConsole, 15);
+        return 0;
+    }
 
-    fs::path full_name;   // полный путь (строка) к файлу
-    fs::path file_name;   // путь (строка) к файлу
+    //fs::path full_name;   // полный путь (строка) к файлу
+    //fs::path file_name;   // путь (строка) к файлу
 
-    for (fs::recursive_directory_iterator i(p), end; i != end; i++) // проход по всем файлам и папкам
+    //for (fs::recursive_directory_iterator i(p), end; i != end; i++) // проход по всем файлам и папкам
+    for (fs::recursive_directory_iterator i(full_name), end; i != end; i++) // проход по всем файлам и папкам
     {
         if (!is_directory(i->path())) // если это файл
         {
             full_name = i->path();
-            file_name = i->path().filename();
+            //file_name = i->path().filename();
 
-            //SetConsoleTextAttribute(hConsole, 10);
-            //cout << setiosflags(ios::left) << setw(80)<<full_name; // вывод полного пути файла
-            //
-            //SetConsoleTextAttribute(hConsole, 14);
-            //cout << "------->\t";
-            //
-            //SetConsoleTextAttribute(hConsole, 11); 
-            //cout<<file_name << endl; // вывод имени файла
-
-            //SetConsoleTextAttribute(hConsole, 15); // стандартный цвет
-
-            if (fs::path(file_name).extension() == ".html")
+            if (fs::path(full_name.filename()).extension() == ".html")
             {
                 ReadFileHtml(full_name, k);
             }
-
-
-
-
 
         }
     }
