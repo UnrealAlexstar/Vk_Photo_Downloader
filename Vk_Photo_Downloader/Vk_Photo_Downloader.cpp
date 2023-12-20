@@ -13,68 +13,69 @@
 namespace fs = boost::filesystem;
 using namespace std;
 
-HRESULT DownloadFile(string line, fs::path full_name, string chat_name, string &photo_full_name, int& k) {
+HRESULT DownloadFile(string line, fs::path current_dir, fs::path input_dir, string chat_name, string& photo_full_name/*для вывода потом*/, int& k) {
     int start = line.find("https://sun");
     int end = line.find("=album") + 6; 
 
     bool find_standart_dir = false;
 
     string link = line.substr(start, end - start);
-    photo_full_name = "";
+    photo_full_name = input_dir.string();
+    photo_full_name += "\\ALL_PHOTOS\\";
  
-    if (full_name.string().find("bookmarks") != std::string::npos)
+    if (current_dir.string().find("bookmarks") != std::string::npos)
     {
-        //photo_full_name = full_name + 
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\BOOKMARKS\\"; // СДЕЛАТЬ ПУТИ ОТ ТОТГО ЧТО ВВЁЛ ПОЛЬЗОАВТЕЛЬ. ВЕДЬ они разные
+        
+        photo_full_name +="\\BOOKMARKS\\"; // СДЕЛАТЬ ПУТИ ОТ ТОТГО ЧТО ВВЁЛ ПОЛЬЗОАВТЕЛЬ. ВЕДЬ они разные
         find_standart_dir = true;
     }
-    if (full_name.string().find("likes") != std::string::npos)
+    if (current_dir.string().find("likes") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\LIKES\\";
+        photo_full_name +="\\LIKES\\";
         find_standart_dir = true;
     }
-    if (full_name.string().find("messages") != std::string::npos)
+    if (current_dir.string().find("messages") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\MESSAGES\\";
+        photo_full_name += "\\MESSAGES\\";
         find_standart_dir = true;
     }
-    if (full_name.string().find("photos") != std::string::npos)
+    if (current_dir.string().find("photos") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\PHOTOS\\";
+        photo_full_name += "\\PHOTOS\\";
         find_standart_dir = true;
     }
-    if (full_name.string().find("profile") != std::string::npos)
+    if (current_dir.string().find("profile") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\PROFILE\\";
+        photo_full_name += "\\PROFILE\\";
         find_standart_dir = true;
     }
-    if (full_name.string().find("video") != std::string::npos)
+    if (current_dir.string().find("video") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\VIDEO\\";
+        photo_full_name += "\\VIDEO\\";
         find_standart_dir = true;
     }
-    if (full_name.string().find("wall") != std::string::npos)
+    if (current_dir.string().find("wall") != std::string::npos)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\WALL\\";
+        photo_full_name += "\\WALL\\";
         find_standart_dir = true;
     }
     if (!find_standart_dir)
     {
-        photo_full_name = "C:\\Users\\Alex\\Downloads\\Archive\\ALL_PHOTOS\\OTHER\\";
+        photo_full_name += "\\OTHER\\";
     }
     photo_full_name = photo_full_name + chat_name + " (" + to_string(k) + ")" + ".jpg";
     HRESULT download_start = URLDownloadToFileA(0, link.c_str(), photo_full_name.c_str(), 0, 0);
     return download_start;
 }
 
-bool ReadFileHtml(fs::path full_name, int& k)
+bool ReadFileHtml(fs::path current_dir, fs::path input_dir, int& k)
 {
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
 
     string line;
     string chat_name = " "; //default name
-    string photo_full_name = " ";
-    ifstream in(full_name.string());
+    string photo_full_name = " "; // для вывода ниже надо . надо ли 
+    ifstream in(current_dir.string());
     int s;
 
     if (in.is_open())
@@ -94,7 +95,7 @@ bool ReadFileHtml(fs::path full_name, int& k)
             {
                 if (line.find("https://sun") != std::string::npos)
                 {
-                    if (DownloadFile(line, full_name, chat_name, photo_full_name, k) == S_OK)
+                    if (DownloadFile(line, current_dir, input_dir, chat_name, photo_full_name, k) == S_OK)
                     {
                         SetConsoleTextAttribute(hConsole, 10);
                         cout << "Photo number ";
@@ -207,17 +208,17 @@ int main()
 
     int k = 0;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE); // for change console color
-    system("mode con cols=180 lines=50");
+   //system("mode con cols=180 lines=50"); + чтобы можно было вверх вниз 
    
     //fs::path p("C:\\Users\\Alex\\Downloads\\Archive"); // стандартный путь к папке
-    fs::path full_name("C:\\Users\\Alex\\Downloads\\Archive");
+    fs::path input_dir("C:\\Users\\Alex\\Downloads\\Archive");
     cout << "Enter the full path to the folder. "
         "Example: \"C:\\Users\\Alex\\Downloads\\Archive\" \n";
 
-    //cin >> full_name; // ввод пути
+    cin >> input_dir; // ввод пути переименовать. типо input folder
     try
     {
-        CreateDirectories(full_name); //p
+        CreateDirectories(input_dir); //p
     }
     catch (const fs::path& problematic_folder) // to save memory, we send it by link
     {
@@ -228,20 +229,16 @@ int main()
         return 0;
     }
 
-    //fs::path full_name;   // полный путь (строка) к файлу
-    //fs::path file_name;   // путь (строка) к файлу
-
-    //for (fs::recursive_directory_iterator i(p), end; i != end; i++) // проход по всем файлам и папкам
-    for (fs::recursive_directory_iterator i(full_name), end; i != end; i++) // проход по всем файлам и папкам
+    fs::path current_dir;
+    for (fs::recursive_directory_iterator i(input_dir), end; i != end; i++) // проход по всем файлам и папкам
     {
         if (!is_directory(i->path())) // если это файл
         {
-            full_name = i->path();
-            //file_name = i->path().filename();
-
-            if (fs::path(full_name.filename()).extension() == ".html")
+            current_dir = i->path(); // ТУТ МЕНЯЕТ ИСХОДНЫЙ ПУТЬ
+            //cout << "----------------"<<input_dir<<"++++++++++++++++++++";
+            if (fs::path(current_dir.filename()).extension() == ".html")
             {
-                ReadFileHtml(full_name, k);
+                ReadFileHtml(current_dir, input_dir, k); // ПОПРОБОВАТЬ НА ЭТОМ ЭТАПЕ МЕНЯТЬ INPUT DIR ДЛЯ НАЗВАНИЯ ФОТО. ПОТОМУ ЧТО ПРОВЕРКА КАКАЯ ПАПКА СЕЙЧАС ИДЁТ В КАЖДОМ ФОТО 
             }
 
         }
