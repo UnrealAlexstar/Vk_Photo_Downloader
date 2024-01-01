@@ -13,7 +13,7 @@
 namespace fs = boost::filesystem;
 using namespace std;
 
-HRESULT DownloadFile(string line, fs::path current_dir, fs::path input_dir, string chat_name, string& photo_full_name/*для вывода потом*/, int& k) {
+HRESULT DownloadFile(string line, fs::path current_dir, fs::path input_dir, string chat_name, string& photo_full_name, int& k) {
     int start = line.find("https://sun");
     int end = line.find("=album") + 6; 
 
@@ -26,7 +26,7 @@ HRESULT DownloadFile(string line, fs::path current_dir, fs::path input_dir, stri
     if (current_dir.string().find("bookmarks") != std::string::npos)
     {
         
-        photo_full_name +="\\BOOKMARKS\\"; // СДЕЛАТЬ ПУТИ ОТ ТОТГО ЧТО ВВЁЛ ПОЛЬЗОАВТЕЛЬ. ВЕДЬ они разные
+        photo_full_name +="\\BOOKMARKS\\"; 
         find_standart_dir = true;
     }
     if (current_dir.string().find("likes") != std::string::npos)
@@ -163,7 +163,7 @@ bool CreateDirectories(fs::path folder)
                 cout << "The " << folder << " folder has been successfully created\n";
                 SetConsoleTextAttribute(hConsole, 15);
             }
-            else throw folder;
+            else throw folder; 
         }
         else
         {
@@ -175,29 +175,6 @@ bool CreateDirectories(fs::path folder)
    }
     
     Sleep(1000);
-    /*folder += "\\BOOKMARKS";
-    folder += "\\LIKES";
-    
-
-    if (!fs::create_directory(folder += "\\BOOKMARKS")) { return 0; }
-
-    folder = original_path;
-    if (!fs::create_directory(folder += "\\LIKES")) { return 0; }
-
-    folder = original_path;
-    if (!fs::create_directory(folder += "\\MESSAGES")) { return 0; }
-
-    folder = original_path;
-    if (!fs::create_directory(folder += "\\PHOTOS")) { return 0; }
-
-    folder = original_path;
-    if (!fs::create_directory(folder += "\\PROFILE")) { return 0; }
-
-    folder = original_path;
-    if (!fs::create_directory(folder += "\\VIDEO")) { return 0; }
-
-    folder = original_path;
-    if (!fs::create_directory(folder += "\\WALL")) { return 0; }*/
 
     return 1;
 }
@@ -205,6 +182,11 @@ int main()
 {
    
     setlocale(LC_ALL, "RUS");
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+
+    HWND hwnd = GetConsoleWindow(); // Узнаём сразу hwnd окна    
+    MoveWindow(hwnd, 300, 200, 1300, 700, TRUE);//xnew,ynew,wnew,hnew -новые положение x,y, ширина и высота
 
     int k = 0;
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE); // for change console color
@@ -214,8 +196,12 @@ int main()
     fs::path input_dir("C:\\Users\\Alex\\Downloads\\Archive");
     cout << "Enter the full path to the folder. "
         "Example: \"C:\\Users\\Alex\\Downloads\\Archive\" \n";
-
-    cin >> input_dir; // ввод пути переименовать. типо input folder
+    
+    string input;
+    getline(cin, input);
+    input_dir = input;
+    cout <<"The entered directory: "<< input_dir << endl;
+  
     try
     {
         CreateDirectories(input_dir); //p
@@ -223,10 +209,17 @@ int main()
     catch (const fs::path& problematic_folder) // to save memory, we send it by link
     {
         SetConsoleTextAttribute(hConsole, 12);
-        cout << "Failed to create folder: " << problematic_folder << endl;
-        cout << "Try to run the program with administrator rights";
+        cerr << "Failed to create folder: " << problematic_folder << endl;
+        cerr << "Try to run the program with administrator rights";
         SetConsoleTextAttribute(hConsole, 15);
         return 0;
+    }
+    catch (const exception& e)
+    {
+        SetConsoleTextAttribute(hConsole, 12);
+        cerr << e.what();
+        SetConsoleTextAttribute(hConsole, 15);
+        exit(0);
     }
 
     fs::path current_dir;
@@ -238,7 +231,7 @@ int main()
             //cout << "----------------"<<input_dir<<"++++++++++++++++++++";
             if (fs::path(current_dir.filename()).extension() == ".html")
             {
-                ReadFileHtml(current_dir, input_dir, k); // ПОПРОБОВАТЬ НА ЭТОМ ЭТАПЕ МЕНЯТЬ INPUT DIR ДЛЯ НАЗВАНИЯ ФОТО. ПОТОМУ ЧТО ПРОВЕРКА КАКАЯ ПАПКА СЕЙЧАС ИДЁТ В КАЖДОМ ФОТО 
+                ReadFileHtml(current_dir, input_dir, k);  
             }
 
         }
